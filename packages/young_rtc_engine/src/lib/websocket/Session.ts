@@ -7,6 +7,7 @@ import subscription from './redis/subscription'
 import channelHelper from './channelHelper'
 import prefixer from './redis/prefixer'
 import rtcHelper from './rtcHelper'
+import { Description } from './actions/common'
 
 const { SESSION_SECRET_KEY } = process.env
 
@@ -80,17 +81,17 @@ class Session {
       }
 
       case 'call': {
-        this.handleCall(action.to)
+        this.handleCall(action.to, action.description)
         break
       }
 
       case 'answer': {
-        this.handleAnswer(action.to)
+        this.handleAnswer(action.to, action.description)
         break
       }
 
       case 'candidate': {
-        this.handleCandidate(action.to)
+        this.handleCandidate(action.to, action.candidate)
         break
       }
     }
@@ -109,16 +110,16 @@ class Session {
     } catch (error) {}
   }
 
-  handleCall(to: string) {
-    rtcHelper.call({ from: this.id, to })
+  handleCall(to: string, description: Description) {
+    rtcHelper.call({ from: this.id, to, description })
   }
 
-  handleAnswer(to: string) {
-    rtcHelper.answer({ from: this.id, to })
+  handleAnswer(to: string, description: Description) {
+    rtcHelper.answer({ from: this.id, to, description })
   }
 
-  handleCandidate(to: string) {
-    rtcHelper.candidate({ from: this.id, to })
+  handleCandidate(to: string, candidate: any) {
+    rtcHelper.candidate({ from: this.id, to, candidate })
   }
 
   public sendSubscriptionMessage(key: string, message: any) {

@@ -37,20 +37,25 @@ type ListSessionsAction = {
 type CallAction = {
   type: 'call'
   to: string
-  // description: {
-  //   sdp: string
-  //   type: 'offer' | 'answer'
-  // }
+  description: {
+    sdp: string
+    type: 'offer' | 'answer'
+  }
 }
 
 type AnswerAction = {
   type: 'answer'
   to: string
+  description: {
+    sdp: string
+    type: 'offer' | 'answer'
+  }
 }
 
 type CandidateAction = {
   type: 'candidate'
   to: string
+  candidate: any
 }
 
 export type Message =
