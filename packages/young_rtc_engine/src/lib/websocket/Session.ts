@@ -5,6 +5,9 @@ import actionCreators from './actions/send'
 import { createHmac } from 'crypto'
 import subscription from './redis/subscription'
 import channelHelper from './channelHelper'
+import prefixer from './redis/prefixer'
+import rtcHelper from './rtcHelper'
+
 const { SESSION_SECRET_KEY } = process.env
 
 if (!SESSION_SECRET_KEY) {
@@ -15,6 +18,7 @@ class Session {
   id: string
   private token: string
   private currentChannel: string | null = null
+  private unsubscriptionMap = new Map<string, () => void>()
 
   constructor(private socket: WebSocket) {
     this.id = v4()
@@ -69,6 +73,26 @@ class Session {
         this.handleMessage(action.message)
         break
       }
+
+      case 'listSessions': {
+        this.handleListSessions()
+        break
+      }
+
+      case 'call': {
+        this.handleCall(action.to)
+        break
+      }
+
+      case 'answer': {
+        this.handleAnswer(action.to)
+        break
+      }
+
+      case 'candidate': {
+        this.handleCandidate(action.to)
+        break
+      }
     }
   }
 
@@ -77,30 +101,65 @@ class Session {
     this.sendJSON(action)
   }
 
+  async handleListSessions() {
+    if (!this.currentChannel) return
+    try {
+      const sessions = await channelHelper.listSessions(this.currentChannel)
+      this.sendJSON(actionCreators.listSessionsSuccess(sessions))
+    } catch (error) {}
+  }
+
+  handleCall(to: string) {
+    rtcHelper.call({ from: this.id, to })
+  }
+
+  handleAnswer(to: string) {
+    rtcHelper.answer({ from: this.id, to })
+  }
+
+  handleCandidate(to: string) {
+    rtcHelper.candidate({ from: this.id, to })
+  }
+
   public sendSubscriptionMessage(key: string, message: any) {
-    const action = actionCreators.subscriptionMessage(key, message)
-    this.sendJSON(action)
+    // const action = actionCreators.subscriptionMessage(key, message)
+    this.sendJSON(message)
+  }
+
+  subscribe(key: string) {
+    const unsubscribe = subscription.subscribe(key, this)
+    this.unsubscriptionMap.set(key, unsubscribe)
+  }
+
+  unsubscribe(key: string) {
+    const unsubscribe = this.unsubscriptionMap.get(key)
+    unsubscribe?.()
+    this.unsubscriptionMap.delete(key)
   }
 
   private handleSubscribe(key: string) {
-    subscription.subscribe(key, this)
+    this.subscribe(key)
     const action = actionCreators.subscriptionSuccess(key)
     this.sendJSON(action)
   }
 
   private handleUnsubscribe(key: string) {
-    subscription.unsubscribe(key, this)
+    this.unsubscribe(key)
   }
 
   private handleEnter(channel: string) {
-    subscription.subscribe(`channel:${channel}`, this)
+    this.subscribe(prefixer.channel(channel))
+    this.subscribe(prefixer.direct(this.id))
+
     channelHelper.enter(channel, this.id)
     this.currentChannel = channel
   }
 
   private handleLeave() {
     if (!this.currentChannel) return
-    subscription.unsubscribe(`channel:${this.currentChannel}`, this)
+    this.unsubscribe(prefixer.channel(this.currentChannel))
+    this.unsubscribe(prefixer.direct(this.id))
+
     channelHelper.leave(this.currentChannel, this.id)
     this.currentChannel = null
   }
@@ -108,6 +167,15 @@ class Session {
   private handleMessage(message: Message) {
     if (!this.currentChannel) return
     channelHelper.message(this.currentChannel, this.id, message)
+  }
+
+  dispose() {
+    // unsubscribe
+    const fns = Array.from(this.unsubscriptionMap.values())
+    fns.forEach(fn => fn())
+    // remove from channel
+    if (!this.currentChannel) return
+    channelHelper.leave(this.currentChannel, this.id)
   }
 }
 

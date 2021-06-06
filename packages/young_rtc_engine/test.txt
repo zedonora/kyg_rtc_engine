@@ -1,0 +1,20 @@
+{
+  "type": "enter",
+  "channel": "test"
+}
+
+{
+  "type" : "listSessions"
+}
+
+{
+  "type" : "message",
+  "message" : {
+    "type" : "text",
+    "text" : "hello"
+  }
+}
+
+{
+  "type" : "leave"
+}

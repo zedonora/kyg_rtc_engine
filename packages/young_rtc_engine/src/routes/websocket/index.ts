@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from 'fastify'
+import { close } from 'fs'
 import { isReceiveAction } from '../../lib/websocket/actions/receive'
 import Session from '../../lib/websocket/Session'
 
@@ -15,6 +16,10 @@ const websocket: FastifyPluginAsync = async fastify => {
       } catch (e) {
         console.error(e)
       }
+    })
+
+    connection.socket.on('close', (code, reason) => {
+      session.dispose()
     })
   })
 }

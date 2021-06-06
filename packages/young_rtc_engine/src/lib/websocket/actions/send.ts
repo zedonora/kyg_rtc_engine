@@ -1,3 +1,4 @@
+import { Message } from './receive'
 /**
  * actions that server sends
  */
@@ -23,16 +24,59 @@ type SubscriptionMessageAction = {
   message: any
 }
 
-type SubscriptionSuccessAction = {
+type SubscriptionSuccess = {
   type: 'subscriptionSuccess'
   key: string
+}
+
+type ListSessionsSuccess = {
+  type: 'listSessionsSuccess'
+  sessions: string[]
+}
+
+type EnteredAction = {
+  type: 'entered'
+  sessionId: string
+}
+
+type LeftAction = {
+  type: 'left'
+  sessionId: string
+}
+
+type MessagedAction = {
+  type: 'messaged'
+  sessionId: string
+  message: Message
+}
+
+type CalledAction = {
+  type: 'called'
+  from: string
+}
+
+type AnsweredAction = {
+  type: 'answered'
+  from: string
+}
+
+type CandidatedAction = {
+  type: 'candidated'
+  from: string
 }
 
 export type SendAction =
   | ConnectedAction
   | ReuseIdSuccessAction
   | SubscriptionMessageAction
-  | SubscriptionSuccessAction
+  | SubscriptionSuccess
+  | ListSessionsSuccess
+  | EnteredAction
+  | LeftAction
+  | MessagedAction
+  | CalledAction
+  | AnsweredAction
+  | CandidatedAction
 
 const actionCreators = {
   connected: (id: string, token: string): ConnectedAction => ({
@@ -58,6 +102,35 @@ const actionCreators = {
   subscriptionSuccess: (key: string) => ({
     type: 'subscriptionSuccess',
     key,
+  }),
+  listSessionsSuccess: (sessions: string[]): ListSessionsSuccess => ({
+    type: 'listSessionsSuccess',
+    sessions,
+  }),
+  entered: (sessionId: string): EnteredAction => ({
+    type: 'entered',
+    sessionId,
+  }),
+  left: (sessionId: string): LeftAction => ({
+    type: 'left',
+    sessionId,
+  }),
+  messaged: (sessionId: string, message: Message): MessagedAction => ({
+    type: 'messaged',
+    sessionId,
+    message,
+  }),
+  called: (from: string): CalledAction => ({
+    type: 'called',
+    from,
+  }),
+  answered: (from: string): AnsweredAction => ({
+    type: 'answered',
+    from,
+  }),
+  candidated: (from: string): CandidatedAction => ({
+    type: 'candidated',
+    from,
   }),
 }
 

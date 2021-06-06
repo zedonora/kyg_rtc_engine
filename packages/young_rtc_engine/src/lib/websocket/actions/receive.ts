@@ -30,6 +30,29 @@ type LeaveAction = {
   type: 'leave'
 }
 
+type ListSessionsAction = {
+  type: 'listSessions'
+}
+
+type CallAction = {
+  type: 'call'
+  to: string
+  // description: {
+  //   sdp: string
+  //   type: 'offer' | 'answer'
+  // }
+}
+
+type AnswerAction = {
+  type: 'answer'
+  to: string
+}
+
+type CandidateAction = {
+  type: 'candidate'
+  to: string
+}
+
 export type Message =
   | {
       type: 'text'
@@ -57,6 +80,10 @@ const actionTypes = [
   'enter',
   'leave',
   'message',
+  'listSessions',
+  'call',
+  'answer',
+  'candidate',
 ]
 
 export type ReceiveAction =
@@ -67,6 +94,10 @@ export type ReceiveAction =
   | EnterAction
   | LeaveAction
   | MessageAction
+  | ListSessionsAction
+  | CallAction
+  | AnswerAction
+  | CandidateAction
 
 export function isReceiveAction(object: any): object is ReceiveAction {
   if (!object?.type) return false
