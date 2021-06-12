@@ -7,18 +7,18 @@ import { PrismaClient } from '.prisma/client'
 const prisma = new PrismaClient()
 
 async function run() {
-  try {
-    await prisma.channel.create({
-      data: {
-        name: 'test',
-      },
-    })
-    const channels = await prisma.channel.findMany()
-    console.log(channels)
-    console.log('create a channel')
-  } catch (e) {
-    console.error(e)
-  }
+  // try {
+  //   await prisma.channel.create({
+  //     data: {
+  //       name: 'test',
+  //     },
+  //   })
+  //   const channels = await prisma.channel.findMany()
+  //   console.log(channels)
+  //   console.log('create a channel')
+  // } catch (e) {
+  //   console.error(e)
+  // }
 }
 
 run()

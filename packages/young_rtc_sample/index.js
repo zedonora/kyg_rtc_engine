@@ -1,7 +1,7 @@
 import './style.css'
 
-//const ws = new WebSocket("ws://localhost:8080/websocket")
-const ws = new WebSocket("ws://172.26.112.1:8080/websocket")
+const ws = new WebSocket("ws://localhost:8080/websocket")
+//const ws = new WebSocket("ws://172.20.48.1:8080/websocket")
 
 const rtcConfiguration = {}
 
@@ -76,7 +76,7 @@ function enterChannel(channelName) {
 async function call(to) {
   const stream = await createMediaStream()
 
-  localPeer = new RTCPeerConnection(rtcConfiguration)
+  const localPeer = new RTCPeerConnection(rtcConfiguration)
   localPeers[to] = localPeer
 
   localPeer.addEventListener('icecandidate', e => {
