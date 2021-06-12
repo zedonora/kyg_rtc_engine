@@ -1,17 +1,21 @@
 import { Message } from './actions/receive'
-import { coreRedisClient, publishJSON } from './redis/createRedisClient'
-import { promisify } from 'util'
+import { publishJSON } from './redis/createRedisClient'
 import prefixer from './redis/prefixer'
 import actionCreators from './actions/send'
+import { SessionUser } from '../../services/sessionService'
+import channelService from '../../services/channelService'
 
 const channelHelper = {
-  enter(channel: string, sessionId: string) {
-    publishJSON(prefixer.channel(channel), actionCreators.entered(sessionId))
-    coreRedisClient.lpush(prefixer.sessions(channel), sessionId)
+  enter(channel: string, sessionId: string, user: SessionUser) {
+    publishJSON(
+      prefixer.channel(channel),
+      actionCreators.entered(sessionId, user)
+    )
+    channelService.addUser(channel, sessionId)
   },
   leave(channel: string, sessionId: string) {
     publishJSON(prefixer.channel(channel), actionCreators.left(sessionId))
-    coreRedisClient.lrem(prefixer.sessions(channel), 1, sessionId)
+    channelService.removeUser(sessionId)
   },
   message(channel: string, sessionId: string, message: Message) {
     publishJSON(
@@ -19,11 +23,6 @@ const channelHelper = {
       actionCreators.messaged(sessionId, message)
     )
   },
-  async listSessions(channel: string) {
-    const key = prefixer.sessions(channel)
-    const lrangeAsync = promisify(coreRedisClient.lrange).bind(coreRedisClient)
-
-    return lrangeAsync(key, 0, -1)
-  },
 }
+
 export default channelHelper

@@ -1,8 +1,10 @@
-import { Message } from './receive'
-import { Description } from './common'
 /**
  * actions that server sends
  */
+
+import { SessionUser } from '../../../services/sessionService'
+import { Description } from './common'
+import { Message } from './receive'
 
 type ConnectedAction = {
   type: 'connected'
@@ -32,12 +34,13 @@ type SubscriptionSuccess = {
 
 type ListSessionsSuccess = {
   type: 'listSessionsSuccess'
-  sessions: string[]
+  sessions: { id: string; user: any }[]
 }
 
 type EnteredAction = {
   type: 'entered'
   sessionId: string
+  user: SessionUser
 }
 
 type LeftAction = {
@@ -69,6 +72,14 @@ type CandidatedAction = {
   candidate: any
 }
 
+type IntegratedUserAction = {
+  type: 'integrated'
+  user: {
+    id: string
+    [key: string]: any
+  }
+}
+
 export type SendAction =
   | ConnectedAction
   | ReuseIdSuccessAction
@@ -81,6 +92,7 @@ export type SendAction =
   | CalledAction
   | AnsweredAction
   | CandidatedAction
+  | IntegratedUserAction
 
 const actionCreators = {
   connected: (id: string, token: string): ConnectedAction => ({
@@ -90,11 +102,9 @@ const actionCreators = {
   }),
   getIdSuccess: (id: string): GetIdSuccessAction => ({
     type: 'getIdSuccess',
-    id,
+    id: id,
   }),
-  reuseIdSuccess: (): ReuseIdSuccessAction => ({
-    type: 'reuseIdSuccess',
-  }),
+  reuseIdSuccess: (): ReuseIdSuccessAction => ({ type: 'reuseIdSuccess' }),
   subscriptionMessage: (
     key: string,
     message: any
@@ -103,17 +113,20 @@ const actionCreators = {
     key,
     message,
   }),
-  subscriptionSuccess: (key: string) => ({
+  subscriptionSuccess: (key: string): SubscriptionSuccess => ({
     type: 'subscriptionSuccess',
     key,
   }),
-  listSessionsSuccess: (sessions: string[]): ListSessionsSuccess => ({
+  listSessionsSuccess: (
+    sessions: { id: string; user: any }[]
+  ): ListSessionsSuccess => ({
     type: 'listSessionsSuccess',
     sessions,
   }),
-  entered: (sessionId: string): EnteredAction => ({
+  entered: (sessionId: string, user: SessionUser): EnteredAction => ({
     type: 'entered',
     sessionId,
+    user,
   }),
   left: (sessionId: string): LeftAction => ({
     type: 'left',
@@ -121,8 +134,8 @@ const actionCreators = {
   }),
   messaged: (sessionId: string, message: Message): MessagedAction => ({
     type: 'messaged',
-    sessionId,
     message,
+    sessionId,
   }),
   called: (from: string, description: Description): CalledAction => ({
     type: 'called',
@@ -138,6 +151,13 @@ const actionCreators = {
     type: 'candidated',
     from,
     candidate,
+  }),
+  integrated: (user: {
+    id: string
+    [key: string]: any
+  }): IntegratedUserAction => ({
+    type: 'integrated',
+    user,
   }),
 }
 

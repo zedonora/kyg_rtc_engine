@@ -1,6 +1,9 @@
 /**
- * actions that server receivers
+ * actions that server receives
  */
+
+import { Description } from './common'
+
 type GetIdAction = {
   type: 'getId'
 }
@@ -37,19 +40,13 @@ type ListSessionsAction = {
 type CallAction = {
   type: 'call'
   to: string
-  description: {
-    sdp: string
-    type: 'offer' | 'answer'
-  }
+  description: Description
 }
 
 type AnswerAction = {
   type: 'answer'
   to: string
-  description: {
-    sdp: string
-    type: 'offer' | 'answer'
-  }
+  description: Description
 }
 
 type CandidateAction = {
@@ -77,6 +74,13 @@ type MessageAction = {
   message: Message
 }
 
+type IntegrateUserAction = {
+  type: 'integrateUser'
+  user: {
+    [key: string]: any
+  }
+}
+
 const actionTypes = [
   'getId',
   'reuseId',
@@ -89,6 +93,7 @@ const actionTypes = [
   'call',
   'answer',
   'candidate',
+  'integrateUser',
 ]
 
 export type ReceiveAction =
@@ -103,6 +108,7 @@ export type ReceiveAction =
   | CallAction
   | AnswerAction
   | CandidateAction
+  | IntegrateUserAction
 
 export function isReceiveAction(object: any): object is ReceiveAction {
   if (!object?.type) return false

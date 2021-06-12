@@ -8,6 +8,9 @@ import channelHelper from './channelHelper'
 import prefixer from './redis/prefixer'
 import rtcHelper from './rtcHelper'
 import { Description } from './actions/common'
+import sessionService from '../../services/sessionService'
+import channelService from '../../services/channelService'
+import config from '../../configLoader'
 
 const { SESSION_SECRET_KEY } = process.env
 
@@ -41,91 +44,56 @@ class Session {
   }
 
   handle(action: ReceiveAction) {
+    console.log(action)
     switch (action.type) {
       case 'getId': {
         this.handleGetId()
         break
       }
-
       case 'reuseId': {
         break
       }
-
       case 'subscribe': {
         this.handleSubscribe(action.key)
         break
       }
-
       case 'unsubscribe': {
         this.handleUnsubscribe(action.key)
         break
       }
-
       case 'enter': {
         this.handleEnter(action.channel)
         break
       }
-
       case 'leave': {
         this.handleLeave()
         break
       }
-
       case 'message': {
         this.handleMessage(action.message)
         break
       }
-
       case 'listSessions': {
         this.handleListSessions()
         break
       }
-
       case 'call': {
         this.handleCall(action.to, action.description)
         break
       }
-
       case 'answer': {
         this.handleAnswer(action.to, action.description)
         break
       }
-
       case 'candidate': {
         this.handleCandidate(action.to, action.candidate)
         break
       }
+      case 'integrateUser': {
+        this.handleIntegrateUser(action.user)
+        break
+      }
     }
-  }
-
-  private handleGetId() {
-    const action = actionCreators.getIdSuccess(this.id)
-    this.sendJSON(action)
-  }
-
-  async handleListSessions() {
-    if (!this.currentChannel) return
-    try {
-      const sessions = await channelHelper.listSessions(this.currentChannel)
-      this.sendJSON(actionCreators.listSessionsSuccess(sessions))
-    } catch (error) {}
-  }
-
-  handleCall(to: string, description: Description) {
-    rtcHelper.call({ from: this.id, to, description })
-  }
-
-  handleAnswer(to: string, description: Description) {
-    rtcHelper.answer({ from: this.id, to, description })
-  }
-
-  handleCandidate(to: string, candidate: any) {
-    rtcHelper.candidate({ from: this.id, to, candidate })
-  }
-
-  public sendSubscriptionMessage(key: string, message: any) {
-    // const action = actionCreators.subscriptionMessage(key, message)
-    this.sendJSON(message)
   }
 
   subscribe(key: string) {
@@ -139,6 +107,11 @@ class Session {
     this.unsubscriptionMap.delete(key)
   }
 
+  private handleGetId() {
+    const action = actionCreators.getIdSuccess(this.id)
+    this.sendJSON(action)
+  }
+
   private handleSubscribe(key: string) {
     this.subscribe(key)
     const action = actionCreators.subscriptionSuccess(key)
@@ -149,11 +122,22 @@ class Session {
     this.unsubscribe(key)
   }
 
-  private handleEnter(channel: string) {
-    this.subscribe(prefixer.channel(channel))
+  private async handleEnter(channelId: string) {
+    const channel = channelService.findById(channelId)
+    if (!channel) {
+      // TODO: send error
+      return
+    }
 
-    channelHelper.enter(channel, this.id)
-    this.currentChannel = channel
+    const user = await sessionService.getUserBySessionId(this.id)
+    if (!user) {
+      // TODO: send error
+      return
+    }
+
+    this.subscribe(prefixer.channel(channelId))
+    channelHelper.enter(channelId, this.id, user)
+    this.currentChannel = channelId
   }
 
   private handleLeave() {
@@ -169,8 +153,57 @@ class Session {
     channelHelper.message(this.currentChannel, this.id, message)
   }
 
+  async handleListSessions() {
+    if (!this.currentChannel) return
+    try {
+      const sessions = await channelService.listUsers(this.currentChannel)
+      this.sendJSON(actionCreators.listSessionsSuccess(sessions))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  handleCall(to: string, description: Description) {
+    rtcHelper.call({
+      from: this.id,
+      to,
+      description,
+    })
+  }
+
+  handleAnswer(to: string, description: Description) {
+    rtcHelper.answer({
+      from: this.id,
+      to,
+      description,
+    })
+  }
+
+  handleCandidate(to: string, candidate: any) {
+    rtcHelper.candidate({
+      from: this.id,
+      to,
+      candidate,
+    })
+  }
+
+  async handleIntegrateUser(user: Record<string, any>) {
+    if (!config.allowAnonymous) return
+    const userWithSessionId = {
+      ...user,
+      id: this.id,
+    }
+    await sessionService.integrate(this.id, JSON.stringify(userWithSessionId))
+    this.sendJSON(actionCreators.integrated(userWithSessionId))
+    console.log(actionCreators.integrated(userWithSessionId))
+  }
+
+  public sendSubscriptionMessage(key: string, message: any) {
+    // const action = actionCreators.subscriptionMessage(key, message)
+    this.sendJSON(message)
+  }
+
   dispose() {
-    // unsubscribe
     const fns = Array.from(this.unsubscriptionMap.values())
     fns.forEach(fn => fn())
     // remove from channel

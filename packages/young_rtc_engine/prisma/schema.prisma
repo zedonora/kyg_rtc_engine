@@ -11,28 +11,23 @@ generator client {
 }
 
 model Channel {
-  id   Int    @id @default(autoincrement())
-  name String
-
-  ChannelSessions ChannelSessions[]
+  id              String           @id
+  ChannelSessions ChannelSession[]
 }
 
 model Session {
-  id     String @id
-  userId String
-
-  user            User              @relation(fields: [userId], references: [id])
-  ChannelSessions ChannelSessions[]
+  id              String           @id
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  ChannelSessions ChannelSession[]
 }
 
-model ChannelSessions {
-  id        Int    @id @default(autoincrement())
-  channelId Int
+model ChannelSession {
+  id        Int     @id @default(autoincrement())
+  channelId String
   sessionId String
-
-  channel Channel @relation(fields: [channelId], references: [id])
-  session Session @relation(fields: [sessionId], references: [id])
-
+  channel   Channel @relation(fields: [channelId], references: [id])
+  session   Session @relation(fields: [sessionId], references: [id])
 }
 
 model User {
